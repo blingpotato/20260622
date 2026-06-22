@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또 추첨기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --black: #000000;
+      --iron: #181818;
+      --charcoal: #202020;
+      --shadow-text: #313131;
+      --gold: #FFC000;
+      --gold-hover: #917300;
+      --gold-text: #FFCE3E;
+      --white: #FFFFFF;
+      --smoke: #F5F5F5;
+      --ash: #7D7D7D;
+      --steel: #969696;
+      --cyan: #29ABE2;
+      --link-blue: #3860BE;
+      --teal: #1EAEDB;
+      --border-subtle: rgba(255, 255, 255, 0.12);
+      --border-ghost: rgba(255, 255, 255, 0.5);
+    }
+
+    body {
+      font-family: Roboto, "Helvetica Neue", Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 56px;
+      line-height: 1.5;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    header::after {
+      content: "";
+      display: block;
+      width: 48px;
+      height: 2px;
+      background: var(--gold);
+      margin: 24px auto 0;
+    }
+
+    header h1 {
+      font-size: clamp(2.5rem, 8vw, 3.38rem);
+      font-weight: 400;
+      line-height: 0.92;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    header p {
+      margin-top: 16px;
+      color: var(--ash);
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+    }
+
+    main {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 32px;
+      background: var(--charcoal);
+      border: none;
+      border-radius: 0;
+      padding: 0;
+    }
+
+    .tab {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--ash);
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+      padding: 16px 24px;
+      border-radius: 0;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+
+    .tab:hover {
+      color: var(--white);
+    }
+
+    .tab.active {
+      background: var(--iron);
+      color: var(--white);
+      border-bottom-color: var(--gold);
+    }
+
+    .panel[hidden] {
+      display: none;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: stretch;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--charcoal);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0;
+      padding: 12px 16px;
+    }
+
+    .control-group label {
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+      color: var(--ash);
+      white-space: nowrap;
+    }
+
+    .control-group select {
+      background: var(--black);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 400;
+      padding: 4px 8px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .control-group select:focus {
+      border-color: var(--gold);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 0;
+      font-size: 0.9rem;
+      font-weight: 400;
+      letter-spacing: 0.14px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s;
+      font-family: inherit;
+      min-height: 48px;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--black);
+      padding: 16px 24px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--gold-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--border-ghost);
+      padding: 16px 24px;
+      opacity: 0.5;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--teal);
+      border-color: var(--teal);
+      opacity: 0.7;
+    }
+
+    .result-area {
+      background: var(--charcoal);
+      border: none;
+      border-bottom: 1px solid var(--charcoal);
+      border-radius: 0;
+      padding: 32px 24px 40px;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .placeholder {
+      color: var(--ash);
+      font-size: 1rem;
+      text-align: center;
+      line-height: 1.56;
+      margin: auto 0;
+    }
+
+    .machine-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .machine-body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .machine-label {
+      font-size: 0.63rem;
+      letter-spacing: 0.225px;
+      text-transform: uppercase;
+      color: var(--steel);
+      margin-bottom: 12px;
+    }
+
+    .drum-assembly {
+      position: relative;
+      width: 240px;
+      height: 240px;
+    }
+
+    .drum {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+        radial-gradient(circle at 70% 75%, rgba(0, 0, 0, 0.55) 0%, transparent 50%),
+        rgba(255, 255, 255, 0.04);
+      border: 3px solid rgba(255, 255, 255, 0.22);
+      box-shadow:
+        inset 0 0 40px rgba(0, 0, 0, 0.65),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 16px 48px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .drum.spinning {
+      animation: drumShake 0.12s linear infinite;
+    }
+
+    .drum-inner {
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+
+    .drum-balls {
+      position: absolute;
+      inset: 0;
+    }
+
+    .drum-ball {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 28px;
+      height: 28px;
+      margin: -14px 0 0 -14px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.65rem;
+      color: var(--black);
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    .drum-ball.yellow  { background: #fbc400; }
+    .drum-ball.blue    { background: #69c8f2; }
+    .drum-ball.red     { background: #ff7272; }
+    .drum-ball.gray    { background: #aaaaaa; }
+    .drum-ball.green   { background: #b0d840; }
+
+    .mixer-arm {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 88px;
+      margin: -44px 0 0 -2px;
+      background: linear-gradient(180deg, var(--gold), rgba(255, 192, 0, 0.2));
+      transform-origin: center center;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .mixer-arm.spinning {
+      animation: armSpin 0.35s linear infinite;
+    }
+
+    .chute {
+      position: relative;
+      width: 44px;
+      height: 72px;
+      margin-top: -8px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      border-left: 2px solid rgba(255, 255, 255, 0.15);
+      border-right: 2px solid rgba(255, 255, 255, 0.15);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      z-index: 2;
+    }
+
+    .chute::before {
+      content: "";
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 52px;
+      height: 18px;
+      background: var(--charcoal);
+      border-radius: 0 0 8px 8px;
+    }
+
+    .chute-glow {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, rgba(255, 192, 0, 0.08));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .chute.active .chute-glow {
+      opacity: 1;
+    }
+
+    .flying-ball {
+      position: fixed;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--black);
+      z-index: 100;
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .flying-ball.yellow  { background: #fbc400; }
+    .flying-ball.blue    { background: #69c8f2; }
+    .flying-ball.red     { background: #ff7272; }
+    .flying-ball.gray    { background: #aaaaaa; }
+    .flying-ball.green   { background: #b0d840; }
+
+    .draw-status {
+      font-size: 0.75rem;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+      color: var(--gold-text);
+      min-height: 1.2em;
+      text-align: center;
+    }
+
+    .result-slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .result-slot {
+      width: 48px;
+      height: 48px;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .result-slot.filled {
+      border-color: transparent;
+    }
+
+    .result-slot .ball {
+      animation: slotLand 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+
+    .result-slot.waiting {
+      border-color: var(--gold);
+      animation: slotPulse 0.6s ease infinite;
+    }
+
+    .tickets-final {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .tickets-final .ticket:first-child {
+      margin-top: 0;
+    }
+
+    .ticket {
+      width: 100%;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .ticket + .ticket {
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .ticket-label {
+      font-size: 0.63rem;
+      font-weight: 400;
+      letter-spacing: 0.225px;
+      color: var(--steel);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .balls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .ball {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--black);
+      animation: popIn 0.35s ease backwards;
+    }
+
+    .ball.yellow  { background: #fbc400; }
+    .ball.blue    { background: #69c8f2; }
+    .ball.red     { background: #ff7272; }
+    .ball.gray    { background: #aaaaaa; }
+    .ball.green   { background: #b0d840; }
+
+    .history {
+      margin-top: 32px;
+      width: 100%;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--charcoal);
+    }
+
+    .history-header h2,
+    .section-label {
+      font-size: 0.75rem;
+      color: var(--white);
+      font-weight: 400;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .history-list::-webkit-scrollbar,
+    .winning-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .history-list::-webkit-scrollbar-thumb,
+    .winning-list::-webkit-scrollbar-thumb {
+      background: var(--shadow-text);
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--iron);
+      border: none;
+      border-left: 2px solid transparent;
+      border-radius: 0;
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .history-item:hover {
+      border-left-color: var(--gold);
+    }
+
+    .history-time {
+      color: var(--steel);
+      font-size: 0.63rem;
+      letter-spacing: 0.225px;
+      text-transform: uppercase;
+      min-width: 56px;
+    }
+
+    .history-balls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .history-ball {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: var(--black);
+    }
+
+    .history-ball.yellow  { background: #fbc400; }
+    .history-ball.blue    { background: #69c8f2; }
+    .history-ball.red     { background: #ff7272; }
+    .history-ball.gray    { background: #aaaaaa; }
+    .history-ball.green   { background: #b0d840; }
+
+    .btn-clear {
+      background: transparent;
+      border: 1px solid var(--border-ghost);
+      color: var(--white);
+      font-size: 0.63rem;
+      font-weight: 400;
+      letter-spacing: 0.225px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 8px 12px;
+      border-radius: 0;
+      opacity: 0.5;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    .btn-clear:hover {
+      background: var(--teal);
+      border-color: var(--teal);
+      opacity: 0.7;
+      color: var(--white);
+    }
+
+    .winning-section {
+      margin-top: 0;
+    }
+
+    .winning-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--charcoal);
+    }
+
+    .winning-toolbar h2 {
+      font-size: 0.75rem;
+      color: var(--white);
+      font-weight: 400;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+    }
+
+    .search-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-group input {
+      width: 120px;
+      background: var(--charcoal);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 12px 16px;
+      outline: none;
+    }
+
+    .search-group input:focus {
+      border-color: var(--gold);
+    }
+
+    .search-group input::placeholder {
+      color: var(--steel);
+      font-size: 0.75rem;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+    }
+
+    .btn-search {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--border-ghost);
+      padding: 12px 16px;
+      font-size: 0.81rem;
+      opacity: 0.5;
+    }
+
+    .btn-search:hover {
+      background: var(--teal);
+      border-color: var(--teal);
+      opacity: 0.7;
+    }
+
+    .winning-meta {
+      font-size: 0.75rem;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+      color: var(--ash);
+      margin-bottom: 24px;
+    }
+
+    .winning-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 560px;
+      overflow-y: auto;
+    }
+
+    .winning-item {
+      background: var(--charcoal);
+      border: none;
+      border-left: 2px solid transparent;
+      border-radius: 0;
+      padding: 24px;
+      animation: fadeIn 0.3s ease;
+      transition: border-color 0.2s;
+    }
+
+    .winning-item:hover {
+      border-left-color: var(--gold);
+    }
+
+    .winning-item.highlight {
+      border-left-color: var(--gold);
+      background: var(--iron);
+    }
+
+    .winning-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .winning-draw {
+      font-weight: 400;
+      font-size: 1.69rem;
+      line-height: 1.37;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .winning-date {
+      font-size: 0.75rem;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+      color: var(--steel);
+    }
+
+    .winning-balls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .ball-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--black);
+    }
+
+    .ball-sm.yellow  { background: #fbc400; }
+    .ball-sm.blue    { background: #69c8f2; }
+    .ball-sm.red     { background: #ff7272; }
+    .ball-sm.gray    { background: #aaaaaa; }
+    .ball-sm.green   { background: #b0d840; }
+
+    .ball-sm.bonus {
+      box-shadow: 0 0 0 2px var(--gold);
+    }
+
+    .bonus-plus {
+      color: var(--steel);
+      font-size: 0.88rem;
+      margin: 0 4px;
+    }
+
+    .winning-prize {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      font-size: 0.88rem;
+    }
+
+    .prize-amount {
+      color: var(--gold-text);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .prize-winners {
+      color: var(--ash);
+      font-size: 0.75rem;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+    }
+
+    .loading, .error-msg {
+      text-align: center;
+      color: var(--ash);
+      padding: 48px 16px;
+      font-size: 1rem;
+      line-height: 1.56;
+    }
+
+    .error-msg {
+      color: var(--cyan);
+    }
+
+    .load-more-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .btn-load-more {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid var(--border-ghost);
+      padding: 16px 32px;
+      font-size: 0.81rem;
+      opacity: 0.5;
+    }
+
+    .btn-load-more:hover:not(:disabled) {
+      background: var(--teal);
+      border-color: var(--teal);
+      opacity: 0.7;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes drumShake {
+      0%, 100% { transform: rotate(-1.5deg); }
+      50%       { transform: rotate(1.5deg); }
+    }
+
+    @keyframes armSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes slotLand {
+      from {
+        opacity: 0;
+        transform: scale(0.4) translateY(-16px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    @keyframes slotPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 192, 0, 0.35); }
+      50%       { box-shadow: 0 0 0 4px rgba(255, 192, 0, 0.15); }
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 48px;
+      color: var(--ash);
+      font-size: 0.75rem;
+      letter-spacing: 0.96px;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.83;
+      max-width: 720px;
+    }
+
+    footer a {
+      color: var(--ash);
+      text-decoration: none;
+      border-bottom: 1px solid var(--shadow-text);
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    footer a:hover {
+      color: var(--link-blue);
+      border-color: var(--link-blue);
+    }
+
+    @media (max-width: 576px) {
+      body {
+        padding: 32px 16px 40px;
+      }
+
+      header {
+        margin-bottom: 32px;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .control-group,
+      .btn-primary,
+      .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .result-area {
+        padding: 24px 16px 32px;
+        min-height: 380px;
+      }
+
+      .drum-assembly {
+        width: 200px;
+        height: 200px;
+      }
+
+      .drum-ball {
+        width: 24px;
+        height: 24px;
+        margin: -12px 0 0 -12px;
+        font-size: 0.58rem;
+      }
+
+      .result-slot,
+      .ball {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+      }
+
+      .search-group {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .search-group input {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>로또 추첨기</h1>
+    <p>1~45 번호 중 6개 무작위 추첨</p>
+  </header>
+
+  <main>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" id="tabDraw" role="tab" aria-selected="true">번호 추첨</button>
+      <button class="tab" id="tabWinning" role="tab" aria-selected="false">역대 1등</button>
+    </nav>
+
+    <div class="panel" id="panelDraw" role="tabpanel">
+      <div class="controls">
+        <div class="control-group">
+          <label for="count">게임 수</label>
+          <select id="count">
+            <option value="1">1게임</option>
+            <option value="3">3게임</option>
+            <option value="5" selected>5게임</option>
+            <option value="10">10게임</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="drawBtn">추첨하기</button>
+        <button class="btn btn-secondary" id="resetBtn">초기화</button>
+      </div>
+
+      <div class="result-area" id="resultArea">
+        <p class="placeholder">「추첨하기」 버튼을 눌러<br>행운의 번호를 확인하세요</p>
+      </div>
+
+      <section class="history" id="historySection" hidden>
+        <div class="history-header">
+          <h2>추첨 기록</h2>
+          <button class="btn-clear" id="clearHistory">기록 삭제</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </div>
+
+    <section class="panel winning-section" id="panelWinning" role="tabpanel" hidden>
+      <div class="winning-toolbar">
+        <h2>역대 1등 당첨번호</h2>
+        <div class="search-group">
+          <input type="number" id="drawSearch" min="1" placeholder="회차 검색">
+          <button class="btn btn-search" id="searchBtn">검색</button>
+          <button class="btn btn-search" id="resetSearchBtn">전체</button>
+        </div>
+      </div>
+      <p class="winning-meta" id="winningMeta">데이터를 불러오는 중...</p>
+      <div class="winning-list" id="winningList">
+        <p class="loading">역대 당첨 데이터를 조회하고 있습니다...</p>
+      </div>
+      <div class="load-more-wrap" id="loadMoreWrap" hidden>
+        <button class="btn btn-load-more" id="loadMoreBtn">더 보기</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>※ 본 추첨기는 무작위 번호 생성 도구이며, 당첨을 보장하지 않습니다.<br>당첨 데이터 출처: <a href="https://www.dhlottery.co.kr" target="_blank" rel="noopener">동행복권</a></footer>
+
+  <script>
+    const MIN = 1;
+    const MAX = 45;
+    const PICK = 6;
+
+    const drawBtn = document.getElementById('drawBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const countSelect = document.getElementById('count');
+    const resultArea = document.getElementById('resultArea');
+    const historySection = document.getElementById('historySection');
+    const historyList = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistory');
+
+    let history = JSON.parse(localStorage.getItem('lottoHistory') || '[]');
+
+    function getBallColor(num) {
+      if (num <= 10) return 'yellow';
+      if (num <= 20) return 'blue';
+      if (num <= 30) return 'red';
+      if (num <= 40) return 'gray';
+      return 'green';
+    }
+
+    function generateNumbers() {
+      const pool = Array.from({ length: MAX - MIN + 1 }, (_, i) => i + MIN);
+      const numbers = [];
+      for (let i = 0; i < PICK; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        numbers.push(pool.splice(idx, 1)[0]);
+      }
+      return numbers.sort((a, b) => a - b);
+    }
+
+    function createBall(num, index = 0) {
+      const ball = document.createElement('div');
+      ball.className = `ball ${getBallColor(num)}`;
+      ball.textContent = num;
+      ball.style.animationDelay = `${index * 0.05}s`;
+      return ball;
+    }
+
+    function createDrumBall(num) {
+      const ball = document.createElement('div');
+      ball.className = `drum-ball ${getBallColor(num)}`;
+      ball.textContent = num;
+      return ball;
+    }
+
+    function renderTickets(tickets) {
+      const wrap = document.createElement('div');
+      wrap.className = 'tickets-final';
+      tickets.forEach((nums, i) => {
+        const ticket = document.createElement('div');
+        ticket.className = 'ticket';
+
+        if (tickets.length > 1) {
+          const label = document.createElement('div');
+          label.className = 'ticket-label';
+          label.textContent = `${String(i + 1).padStart(2, '0')}게임`;
+          ticket.appendChild(label);
+        }
+
+        const balls = document.createElement('div');
+        balls.className = 'balls';
+        nums.forEach((num, j) => balls.appendChild(createBall(num, j)));
+        ticket.appendChild(balls);
+        wrap.appendChild(ticket);
+      });
+      return wrap;
+    }
+
+    function showPlaceholder() {
+      resultArea.innerHTML = '<p class="placeholder">「추첨하기」 버튼을 눌러<br>행운의 번호를 확인하세요</p>';
+    }
+
+    function buildMachineUI(gameIndex, totalGames) {
+      resultArea.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'machine-wrap';
+
+      const label = document.createElement('div');
+      label.className = 'machine-label';
+      label.textContent = totalGames > 1
+        ? `${String(gameIndex + 1).padStart(2, '0')} / ${String(totalGames).padStart(2, '0')} 게임 추첨 중`
+        : '추첨기 가동 중';
+      wrap.appendChild(label);
+
+      const body = document.createElement('div');
+      body.className = 'machine-body';
+      body.innerHTML = `
+        <div class="drum-assembly">
+          <div class="drum" id="drum">
+            <div class="drum-inner">
+              <div class="drum-balls" id="drumBalls"></div>
+            </div>
+            <div class="mixer-arm" id="mixerArm"></div>
+          </div>
+          <div class="chute" id="chute">
+            <div class="chute-glow"></div>
+          </div>
+        </div>
+      `;
+      wrap.appendChild(body);
+
+      const status = document.createElement('div');
+      status.className = 'draw-status';
+      status.id = 'drawStatus';
+      status.textContent = '공을 섞는 중...';
+      wrap.appendChild(status);
+
+      const slots = document.createElement('div');
+      slots.className = 'result-slots';
+      slots.id = 'resultSlots';
+      for (let i = 0; i < PICK; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'result-slot';
+        slot.dataset.index = i;
+        slots.appendChild(slot);
+      }
+      wrap.appendChild(slots);
+
+      resultArea.appendChild(wrap);
+
+      return {
+        drum: document.getElementById('drum'),
+        drumBalls: document.getElementById('drumBalls'),
+        mixerArm: document.getElementById('mixerArm'),
+        chute: document.getElementById('chute'),
+        status: document.getElementById('drawStatus'),
+        slots: document.getElementById('resultSlots'),
+      };
+    }
+
+    class DrumAnimator {
+      constructor(container) {
+        this.container = container;
+        this.items = [];
+        this.running = false;
+        this.angle = 0;
+        this.raf = null;
+      }
+
+      start() {
+        this.stop();
+        this.container.innerHTML = '';
+        this.items = Array.from({ length: 16 }, () => {
+          const num = MIN + Math.floor(Math.random() * MAX);
+          const el = createDrumBall(num);
+          this.container.appendChild(el);
+          return {
+            el,
+            offset: Math.random() * Math.PI * 2,
+            radius: 38 + Math.random() * 42,
+            speed: 0.7 + Math.random() * 0.6,
+            wobble: Math.random() * Math.PI * 2,
+          };
+        });
+        this.running = true;
+        this.tick();
+      }
+
+      tick() {
+        if (!this.running) return;
+        this.angle += 0.11;
+        this.items.forEach((item, i) => {
+          const a = this.angle * item.speed + item.offset;
+          const wobble = Math.sin(this.angle * 2.4 + item.wobble) * 10;
+          const r = item.radius + wobble;
+          const x = Math.cos(a) * r;
+          const y = Math.sin(a) * r * 0.82;
+          item.el.style.transform = `translate(${x}px, ${y}px)`;
+          item.el.style.zIndex = Math.round(50 + y);
+        });
+        this.raf = requestAnimationFrame(() => this.tick());
+      }
+
+      stop() {
+        this.running = false;
+        if (this.raf) cancelAnimationFrame(this.raf);
+      }
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function flyBallToSlot(num, fromEl, toSlot) {
+      return new Promise(resolve => {
+        const color = getBallColor(num);
+        const flying = document.createElement('div');
+        flying.className = `flying-ball ${color}`;
+        flying.textContent = num;
+        document.body.appendChild(flying);
+
+        const from = fromEl.getBoundingClientRect();
+        const to = toSlot.getBoundingClientRect();
+        const size = 40;
+        const startX = from.left + from.width / 2 - size / 2;
+        const startY = from.top + from.height / 2 - size / 2;
+        const endX = to.left + to.width / 2 - size / 2;
+        const endY = to.top + to.height / 2 - size / 2;
+
+        flying.style.left = `${startX}px`;
+        flying.style.top = `${startY}px`;
+
+        const midX = (startX + endX) / 2;
+        const midY = Math.max(startY, endY) + 28;
+
+        const duration = 650;
+        const start = performance.now();
+
+        function easeOutCubic(t) {
+          return 1 - Math.pow(1 - t, 3);
+        }
+
+        function frame(now) {
+          const t = Math.min((now - start) / duration, 1);
+          const e = easeOutCubic(t);
+          const x = (1 - e) * (1 - e) * startX + 2 * (1 - e) * e * midX + e * e * endX;
+          const y = (1 - e) * (1 - e) * startY + 2 * (1 - e) * e * midY + e * e * endY;
+          const scale = 1 + Math.sin(t * Math.PI) * 0.12;
+          flying.style.left = `${x}px`;
+          flying.style.top = `${y}px`;
+          flying.style.transform = `scale(${scale})`;
+
+          if (t < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            flying.remove();
+            toSlot.classList.add('filled');
+            toSlot.appendChild(createBall(num));
+            resolve();
+          }
+        }
+
+        requestAnimationFrame(frame);
+      });
+    }
+
+    async function drawSingleGame(gameIndex, totalGames) {
+      const numbers = generateNumbers();
+      const drawOrder = [...numbers].sort(() => Math.random() - 0.5);
+      const ui = buildMachineUI(gameIndex, totalGames);
+      const animator = new DrumAnimator(ui.drumBalls);
+
+      ui.drum.classList.add('spinning');
+      ui.mixerArm.classList.add('spinning');
+      animator.start();
+
+      const mixTime = gameIndex === 0 ? 1800 : 1200;
+      await wait(mixTime);
+
+      const slotEls = [...ui.slots.querySelectorAll('.result-slot')];
+
+      for (let i = 0; i < PICK; i++) {
+        ui.chute.classList.add('active');
+        slotEls.forEach((slot, idx) => {
+          slot.classList.toggle('waiting', idx === i);
+        });
+        ui.status.textContent = `${i + 1}번째 공 추첨 중...`;
+
+        animator.stop();
+        ui.drum.classList.remove('spinning');
+        ui.mixerArm.classList.remove('spinning');
+
+        await wait(300);
+        await flyBallToSlot(drawOrder[i], ui.chute, slotEls[i]);
+        ui.chute.classList.remove('active');
+        slotEls[i].classList.remove('waiting');
+
+        if (i < PICK - 1) {
+          ui.status.textContent = '공을 섞는 중...';
+          ui.drum.classList.add('spinning');
+          ui.mixerArm.classList.add('spinning');
+          animator.start();
+          await wait(550);
+        }
+      }
+
+      animator.stop();
+      ui.drum.classList.remove('spinning');
+      ui.mixerArm.classList.remove('spinning');
+      ui.status.textContent = '추첨 완료';
+
+      const sorted = [...numbers].sort((a, b) => a - b);
+      await wait(400);
+
+      slotEls.forEach((slot, i) => {
+        slot.innerHTML = '';
+        slot.appendChild(createBall(sorted[i], i));
+      });
+
+      await wait(600);
+      return sorted;
+    }
+
+    async function animateDraw(count) {
+      drawBtn.disabled = true;
+      countSelect.disabled = true;
+      const finalTickets = [];
+
+      for (let g = 0; g < count; g++) {
+        const nums = await drawSingleGame(g, count);
+        finalTickets.push(nums);
+      }
+
+      const machineWrap = resultArea.querySelector('.machine-wrap');
+      if (count > 1) {
+        resultArea.innerHTML = '';
+        const done = document.createElement('div');
+        done.className = 'draw-status';
+        done.style.marginBottom = '24px';
+        done.textContent = `${count}게임 추첨 완료`;
+        resultArea.appendChild(done);
+        resultArea.appendChild(renderTickets(finalTickets));
+      } else if (machineWrap) {
+        const label = machineWrap.querySelector('.machine-label');
+        if (label) label.textContent = '추첨 완료';
+      }
+
+      saveHistory(finalTickets);
+      drawBtn.disabled = false;
+      countSelect.disabled = false;
+    }
+
+    function formatTime(date) {
+      return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function saveHistory(tickets) {
+      const entry = { time: new Date().toISOString(), tickets };
+      history.unshift(entry);
+      if (history.length > 20) history = history.slice(0, 20);
+      localStorage.setItem('lottoHistory', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (history.length === 0) {
+        historySection.hidden = true;
+        return;
+      }
+      historySection.hidden = false;
+      historyList.innerHTML = '';
+      history.forEach(entry => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+
+        const time = document.createElement('span');
+        time.className = 'history-time';
+        time.textContent = formatTime(new Date(entry.time));
+        item.appendChild(time);
+
+        const ballsWrap = document.createElement('div');
+        ballsWrap.className = 'history-balls';
+        entry.tickets.forEach(nums => {
+          nums.forEach(num => {
+            const ball = document.createElement('span');
+            ball.className = `history-ball ${getBallColor(num)}`;
+            ball.textContent = num;
+            ballsWrap.appendChild(ball);
+          });
+        });
+        item.appendChild(ballsWrap);
+        historyList.appendChild(item);
+      });
+    }
+
+    drawBtn.addEventListener('click', () => {
+      const count = parseInt(countSelect.value, 10);
+      animateDraw(count);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      showPlaceholder();
+    });
+
+    clearHistoryBtn.addEventListener('click', () => {
+      history = [];
+      localStorage.removeItem('lottoHistory');
+      renderHistory();
+    });
+
+    renderHistory();
+
+    // --- 역대 1등 당첨번호 ---
+    const LOTTO_API = 'https://smok95.github.io/lotto/results/all.json';
+    const WINNING_CACHE_KEY = 'lottoWinningData';
+    const WINNING_CACHE_TIME_KEY = 'lottoWinningDataTime';
+    const CACHE_TTL = 24 * 60 * 60 * 1000;
+    const PAGE_SIZE = 30;
+
+    const tabDraw = document.getElementById('tabDraw');
+    const tabWinning = document.getElementById('tabWinning');
+    const panelDraw = document.getElementById('panelDraw');
+    const panelWinning = document.getElementById('panelWinning');
+    const winningList = document.getElementById('winningList');
+    const winningMeta = document.getElementById('winningMeta');
+    const drawSearch = document.getElementById('drawSearch');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetSearchBtn = document.getElementById('resetSearchBtn');
+    const loadMoreWrap = document.getElementById('loadMoreWrap');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    let allWinningData = [];
+    let filteredData = [];
+    let visibleCount = PAGE_SIZE;
+    let winningLoaded = false;
+
+    function switchTab(target) {
+      const isDraw = target === 'draw';
+      tabDraw.classList.toggle('active', isDraw);
+      tabWinning.classList.toggle('active', !isDraw);
+      tabDraw.setAttribute('aria-selected', isDraw);
+      tabWinning.setAttribute('aria-selected', !isDraw);
+      panelDraw.hidden = !isDraw;
+      panelWinning.hidden = isDraw;
+      if (!isDraw && !winningLoaded) loadWinningData();
+    }
+
+    tabDraw.addEventListener('click', () => switchTab('draw'));
+    tabWinning.addEventListener('click', () => switchTab('winning'));
+
+    function getFirstPrize(divisions) {
+      for (const idx of [0, 1]) {
+        const d = divisions[idx];
+        if (d && d.prize) return d;
+      }
+      return { prize: 0, winners: 0 };
+    }
+
+    function formatMoney(amount) {
+      if (!amount) return '-';
+      const eok = Math.floor(amount / 100000000);
+      const man = Math.floor((amount % 100000000) / 10000);
+      if (eok > 0 && man > 0) return `${eok.toLocaleString('ko-KR')}억 ${man.toLocaleString('ko-KR')}만 원`;
+      if (eok > 0) return `${eok.toLocaleString('ko-KR')}억 원`;
+      return `${amount.toLocaleString('ko-KR')}원`;
+    }
+
+    function formatDate(dateStr) {
+      return new Date(dateStr).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    }
+
+    function createSmallBall(num, bonus = false) {
+      const ball = document.createElement('span');
+      ball.className = `ball-sm ${getBallColor(num)}${bonus ? ' bonus' : ''}`;
+      ball.textContent = num;
+      return ball;
+    }
+
+    function renderWinningItem(item, highlight = false) {
+      const first = getFirstPrize(item.divisions);
+      const el = document.createElement('article');
+      el.className = `winning-item${highlight ? ' highlight' : ''}`;
+      el.dataset.draw = item.draw_no;
+
+      const top = document.createElement('div');
+      top.className = 'winning-top';
+      top.innerHTML = `
+        <span class="winning-draw">${item.draw_no}회</span>
+        <span class="winning-date">${formatDate(item.date)}</span>
+      `;
+      el.appendChild(top);
+
+      const balls = document.createElement('div');
+      balls.className = 'winning-balls';
+      item.numbers.forEach(num => balls.appendChild(createSmallBall(num)));
+      const plus = document.createElement('span');
+      plus.className = 'bonus-plus';
+      plus.textContent = '+';
+      balls.appendChild(plus);
+      balls.appendChild(createSmallBall(item.bonus_no, true));
+      el.appendChild(balls);
+
+      const prize = document.createElement('div');
+      prize.className = 'winning-prize';
+      prize.innerHTML = `
+        <span class="prize-amount">1등 ${formatMoney(first.prize)}</span>
+        <span class="prize-winners">당첨 ${first.winners.toLocaleString('ko-KR')}명</span>
+      `;
+      el.appendChild(prize);
+
+      return el;
+    }
+
+    function updateWinningMeta() {
+      if (!filteredData.length) {
+        winningMeta.textContent = '검색 결과가 없습니다.';
+        return;
+      }
+      const latest = filteredData[0].draw_no;
+      const oldest = filteredData[filteredData.length - 1].draw_no;
+      const showing = Math.min(visibleCount, filteredData.length);
+      winningMeta.textContent = `총 ${filteredData.length.toLocaleString('ko-KR')}회차 · ${oldest}회~${latest}회 · ${showing}건 표시`;
+    }
+
+    function renderWinningList() {
+      winningList.innerHTML = '';
+      const slice = filteredData.slice(0, visibleCount);
+      if (slice.length === 0) {
+        winningList.innerHTML = '<p class="loading">검색 결과가 없습니다.</p>';
+        loadMoreWrap.hidden = true;
+        updateWinningMeta();
+        return;
+      }
+      slice.forEach(item => winningList.appendChild(renderWinningItem(item)));
+      loadMoreWrap.hidden = visibleCount >= filteredData.length;
+      updateWinningMeta();
+    }
+
+    function applySearch() {
+      const query = parseInt(drawSearch.value, 10);
+      if (!query || query < 1) {
+        filteredData = [...allWinningData];
+        visibleCount = PAGE_SIZE;
+      } else {
+        filteredData = allWinningData.filter(item => item.draw_no === query);
+        visibleCount = filteredData.length || PAGE_SIZE;
+      }
+      renderWinningList();
+      if (query && filteredData.length === 1) {
+        winningList.firstChild?.classList.add('highlight');
+      }
+    }
+
+    async function loadWinningData() {
+      try {
+        winningList.innerHTML = '<p class="loading">역대 당첨 데이터를 조회하고 있습니다...</p>';
+        loadMoreWrap.hidden = true;
+
+        const cached = localStorage.getItem(WINNING_CACHE_KEY);
+        const cacheTime = localStorage.getItem(WINNING_CACHE_TIME_KEY);
+        let data;
+
+        if (cached && cacheTime && Date.now() - parseInt(cacheTime, 10) < CACHE_TTL) {
+          data = JSON.parse(cached);
+        } else {
+          const res = await fetch(LOTTO_API);
+          if (!res.ok) throw new Error('API 응답 오류');
+          data = await res.json();
+          localStorage.setItem(WINNING_CACHE_KEY, JSON.stringify(data));
+          localStorage.setItem(WINNING_CACHE_TIME_KEY, Date.now().toString());
+        }
+
+        allWinningData = data.sort((a, b) => b.draw_no - a.draw_no);
+        filteredData = [...allWinningData];
+        visibleCount = PAGE_SIZE;
+        winningLoaded = true;
+        renderWinningList();
+      } catch (err) {
+        winningList.innerHTML = '<p class="error-msg">데이터를 불러오지 못했습니다.<br>잠시 후 다시 시도해 주세요.</p>';
+        winningMeta.textContent = '';
+      }
+    }
+
+    searchBtn.addEventListener('click', applySearch);
+    resetSearchBtn.addEventListener('click', () => {
+      drawSearch.value = '';
+      filteredData = [...allWinningData];
+      visibleCount = PAGE_SIZE;
+      renderWinningList();
+    });
+    drawSearch.addEventListener('keydown', e => {
+      if (e.key === 'Enter') applySearch();
+    });
+    loadMoreBtn.addEventListener('click', () => {
+      visibleCount += PAGE_SIZE;
+      renderWinningList();
+    });
+  </script>
+</body>
+</html>
