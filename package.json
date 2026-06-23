@@ -1,0 +1,7 @@
+{
+  "name": "lotto-draw-app",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  }
+}

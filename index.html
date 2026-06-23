@@ -512,6 +512,19 @@
       text-transform: uppercase;
     }
 
+    .history-sync {
+      font-size: 0.63rem;
+      letter-spacing: 0.225px;
+      text-transform: uppercase;
+      color: var(--steel);
+      margin-left: auto;
+      margin-right: 12px;
+    }
+
+    .history-sync.cloud { color: var(--gold-text); }
+    .history-sync.local { color: var(--ash); }
+    .history-sync.error { color: var(--cyan); }
+
     .history-list {
       display: flex;
       flex-direction: column;
@@ -1195,6 +1208,7 @@
       <section class="history" id="historySection" hidden>
         <div class="history-header">
           <h2>추첨 기록</h2>
+          <span class="history-sync" id="historySync" hidden></span>
           <button class="btn-clear" id="clearHistory">기록 삭제</button>
         </div>
         <div class="history-list" id="historyList"></div>
@@ -1258,8 +1272,12 @@
     const historySection = document.getElementById('historySection');
     const historyList = document.getElementById('historyList');
     const clearHistoryBtn = document.getElementById('clearHistory');
+    const historySync = document.getElementById('historySync');
+    const DRAWS_API = '/api/draws';
+    const HISTORY_LOCAL_KEY = 'lottoHistory';
 
-    let history = JSON.parse(localStorage.getItem('lottoHistory') || '[]');
+    let history = [];
+    let historySource = 'local';
 
     function getBallColor(num) {
       if (num <= 10) return 'yellow';
@@ -1566,7 +1584,7 @@
         if (label) label.textContent = '추첨 완료';
       }
 
-      saveHistory(finalTickets);
+      await saveHistory(finalTickets);
       drawBtn.disabled = false;
       countSelect.disabled = false;
     }
@@ -1575,17 +1593,94 @@
       return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function saveHistory(tickets) {
+    function updateHistorySync(status) {
+      if (!historySync) return;
+      const labels = {
+        cloud: 'Supabase 저장',
+        local: '로컬 저장',
+        loading: '불러오는 중…',
+        saving: '저장 중…',
+        error: '저장 실패 · 로컬',
+      };
+      historySync.hidden = !history.length && status !== 'loading';
+      historySync.textContent = labels[status] || '';
+      historySync.className = `history-sync ${status === 'cloud' || status === 'saving' ? 'cloud' : status === 'error' ? 'error' : 'local'}`;
+    }
+
+    function saveHistoryLocal(tickets) {
       const entry = { time: new Date().toISOString(), tickets };
       history.unshift(entry);
+      const local = JSON.parse(localStorage.getItem(HISTORY_LOCAL_KEY) || '[]');
+      local.unshift(entry);
+      localStorage.setItem(HISTORY_LOCAL_KEY, JSON.stringify(local.slice(0, 20)));
+    }
+
+    async function saveHistory(tickets) {
+      updateHistorySync('saving');
+
+      try {
+        const res = await fetch(DRAWS_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tickets }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.entry) {
+          history.unshift({
+            id: data.entry.id,
+            time: data.entry.created_at,
+            tickets: data.entry.tickets,
+          });
+          historySource = 'cloud';
+          if (history.length > 50) history = history.slice(0, 50);
+          updateHistorySync('cloud');
+          renderHistory();
+          return;
+        }
+      } catch {
+        // Supabase API 실패 시 로컬 fallback
+      }
+
+      saveHistoryLocal(tickets);
+      historySource = 'local';
       if (history.length > 20) history = history.slice(0, 20);
-      localStorage.setItem('lottoHistory', JSON.stringify(history));
+      updateHistorySync('error');
+      renderHistory();
+    }
+
+    async function loadHistory() {
+      updateHistorySync('loading');
+
+      try {
+        const res = await fetch(DRAWS_API);
+        const data = await res.json();
+
+        if (res.ok && Array.isArray(data.draws)) {
+          history = data.draws.map(row => ({
+            id: row.id,
+            time: row.created_at,
+            tickets: row.tickets,
+          }));
+          historySource = 'cloud';
+          updateHistorySync('cloud');
+          renderHistory();
+          return;
+        }
+      } catch {
+        // 로컬 fallback
+      }
+
+      history = JSON.parse(localStorage.getItem(HISTORY_LOCAL_KEY) || '[]');
+      historySource = 'local';
+      updateHistorySync(history.length ? 'local' : 'local');
       renderHistory();
     }
 
     function renderHistory() {
       if (history.length === 0) {
         historySection.hidden = true;
+        if (historySync) historySync.hidden = true;
         return;
       }
       historySection.hidden = false;
@@ -1623,13 +1718,20 @@
       showPlaceholder();
     });
 
-    clearHistoryBtn.addEventListener('click', () => {
+    clearHistoryBtn.addEventListener('click', async () => {
+      try {
+        if (historySource === 'cloud') {
+          await fetch(DRAWS_API, { method: 'DELETE' });
+        }
+      } catch {
+        // ignore
+      }
       history = [];
-      localStorage.removeItem('lottoHistory');
+      localStorage.removeItem(HISTORY_LOCAL_KEY);
       renderHistory();
     });
 
-    renderHistory();
+    loadHistory();
 
     // --- 역대 1등 당첨번호 ---
     const LOTTO_API = 'https://smok95.github.io/lotto/results/all.json';
